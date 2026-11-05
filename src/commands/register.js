@@ -25,35 +25,35 @@ module.exports = {
     const nickname = interaction.options.getString('nickname');
     const avatarUrl = interaction.options.getString('avatar_url');
 
-    const result = registrationService.registerUser({
+    await interaction.deferReply({ ephemeral: true });
+
+    const result = await registrationService.requestRegistration({
+      client: interaction.client,
       discordId: interaction.user.id,
       nickname,
       avatarUrl
     });
 
     if (!result.success) {
-      return interaction.reply({
-        embeds: [createErrorEmbed('Registration Failed', result.error)],
-        ephemeral: true
+      return interaction.editReply({
+        embeds: [createErrorEmbed('Registration Failed', result.error)]
       });
     }
 
     const embed = createSuccessEmbed(
-      'Registration Successful',
-      `You are now registered as **${result.user.nickname}**!\n\n` +
-      `• Your nickname is global across all participating servers.\n` +
-      `• Your identity is protected and commands are kept ephemeral.\n` +
-      `• Profile Picture: ${result.user.avatar_url ? `[Custom Avatar](${result.user.avatar_url})` : 'Default avatar'}\n\n` +
-      `Use \`/send\` to send anonymous messages or \`/servers\` to view available servers.`
+      'Registration Request Submitted',
+      `Your request to register the anonymous nickname **${result.nickname}** has been sent to the bot owner for approval.\n\n` +
+      `• **Status:** Pending Owner Review\n` +
+      `• **Profile Picture:** ${result.avatarUrl ? `[Custom Avatar](${result.avatarUrl})` : 'Default'}\n\n` +
+      `You will receive a direct message once the bot owner has accepted or declined your request.`
     );
 
-    if (result.user.avatar_url) {
-      embed.setThumbnail(result.user.avatar_url);
+    if (result.avatarUrl) {
+      embed.setThumbnail(result.avatarUrl);
     }
 
-    return interaction.reply({
-      embeds: [embed],
-      ephemeral: true
+    return interaction.editReply({
+      embeds: [embed]
     });
   }
 };

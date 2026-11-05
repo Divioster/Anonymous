@@ -18,23 +18,28 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'delete') {
-      const result = registrationService.deleteAccount(interaction.user.id);
+      await interaction.deferReply({ ephemeral: true });
+
+      const result = await registrationService.requestAccountDeletion({
+        client: interaction.client,
+        discordId: interaction.user.id
+      });
+
       if (!result.success) {
-        return interaction.reply({
-          embeds: [createErrorEmbed('Deletion Failed', result.error)],
-          ephemeral: true
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Deletion Failed', result.error)]
         });
       }
 
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           createSuccessEmbed(
-            'Account Deleted',
-            'Your AnonBot account and registered nickname have been deleted.\n' +
-            'You may register again at any time with `/register`.'
+            'Deletion Request Submitted',
+            `Your request to delete your anonymous account (**${result.nickname}**) has been sent to the bot owner for approval.\n\n` +
+            `• **Status:** Pending Owner Review\n\n` +
+            `You will receive a direct message once the bot owner has accepted or declined your request.`
           )
-        ],
-        ephemeral: true
+        ]
       });
     }
   }

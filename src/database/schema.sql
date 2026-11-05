@@ -71,6 +71,20 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS pending_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_uuid TEXT UNIQUE NOT NULL,
+    discord_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    nickname TEXT,
+    nickname_normalized TEXT,
+    payload TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    created_at INTEGER NOT NULL,
+    reviewed_at INTEGER,
+    reviewed_by TEXT
+);
+
 -- Indexes for fast lookups
 CREATE INDEX IF NOT EXISTS idx_users_discord_id ON users(discord_id);
 CREATE INDEX IF NOT EXISTS idx_users_nickname_norm ON users(nickname_normalized);
@@ -80,4 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_messages_discord_id ON messages(discord_message_i
 CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
 CREATE INDEX IF NOT EXISTS idx_rate_limits_lookup ON rate_limits(user_id, action, timestamp);
 CREATE INDEX IF NOT EXISTS idx_attachments_msg_id ON attachments(message_id);
+CREATE INDEX IF NOT EXISTS idx_pending_requests_discord ON pending_requests(discord_id);
+CREATE INDEX IF NOT EXISTS idx_pending_requests_status ON pending_requests(status);
+CREATE INDEX IF NOT EXISTS idx_pending_requests_nick_norm ON pending_requests(nickname_normalized);
 

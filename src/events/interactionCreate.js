@@ -4,11 +4,14 @@ const {
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
-  ActionRowBuilder
+  ActionRowBuilder,
+  EmbedBuilder
 } = require('discord.js');
 const messageService = require('../services/messageService');
 const routingService = require('../services/routingService');
+const registrationService = require('../services/registrationService');
 const sendCommand = require('../commands/send');
+const { isGlobalAdmin } = require('../utils/permissions');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed } = require('../utils/helpers');
 
 module.exports = {
@@ -153,6 +156,52 @@ module.exports = {
                 `• **Message Reference:** \`${result.messageUuid}\``
               )
             ]
+          });
+        }
+      }
+
+      // 5. Handle Buttons (Bot Owner Accept / Decline for registrations, changes, deletions)
+      if (interaction.isButton()) {
+        if (interaction.customId.startsWith('approve_req_') || interaction.customId.startsWith('decline_req_')) {
+          if (!isGlobalAdmin(interaction.user.id)) {
+            return interaction.reply({
+              embeds: [createErrorEmbed('Access Denied', 'Only the authorized bot owner can review requests.')],
+              ephemeral: true
+            });
+          }
+
+          const isApprove = interaction.customId.startsWith('approve_req_');
+          const requestId = Number(
+            interaction.customId.replace('approve_req_', '').replace('decline_req_', '')
+          );
+
+          const result = await registrationService.handleRequestDecision({
+            client: interaction.client,
+            requestId,
+            decision: isApprove ? 'APPROVED' : 'DECLINED',
+            reviewerId: interaction.user.id
+          });
+
+          if (!result.success) {
+            return interaction.reply({
+              embeds: [createErrorEmbed('Decision Error', result.error)],
+              ephemeral: true
+            });
+          }
+
+          // Update the owner's DM message to show decision and remove buttons
+          const originalEmbed = interaction.message.embeds[0];
+          const updatedEmbed = EmbedBuilder.from(originalEmbed)
+            .setColor(isApprove ? 0x57F287 : 0xED4245)
+            .addFields({
+              name: '📌 Decision',
+              value: `${isApprove ? '✅ Approved' : '❌ Declined'} by <@${interaction.user.id}> at ${new Date().toUTCString()}`,
+              inline: false
+            });
+
+          return interaction.update({
+            embeds: [updatedEmbed],
+            components: []
           });
         }
       }

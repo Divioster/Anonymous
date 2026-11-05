@@ -6,6 +6,8 @@ A lightweight, high-performance Discord bot built with **Node.js (CommonJS)**, *
 
 ## Key Features
 
+- **Owner-Approved Registrations & Nicknames**: All user registrations, nickname changes, and account deletions are routed directly to the bot owner's DM with interactive **Accept / Decline** buttons. Only upon owner acceptance is the identity activated.
+- **Strict Nickname Uniqueness**: Case-insensitive nickname uniqueness is enforced across both active registered users and pending requests, ensuring no two people can ever register or request the same nickname.
 - **Global Anonymous Nicknames**: Users register a globally unique nickname (`/register`, `/nickname view`, `/nickname change` with a 7-day cooldown).
 - **Custom Anonymous Avatars (PFPs) via Webhooks**: Users can configure their own anonymous avatar (`/avatar set <url|file>`). The bot uses native Discord Webhooks on destination channels to publish messages displaying the user's custom nickname and avatar icon without exposing their real Discord username, avatar, or ID.
 - **Privacy by Design**: All user commands (`/register`, `/nickname`, `/avatar`, `/send`, `/servers`, `/account`) are responded to with **ephemeral messages** so no one else in a server or channel can see who owns what nickname.

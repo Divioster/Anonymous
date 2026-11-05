@@ -57,27 +57,31 @@ module.exports = {
 
     if (subcommand === 'change') {
       const newNickname = interaction.options.getString('new_nickname');
-      const result = registrationService.changeNickname({
+
+      await interaction.deferReply({ ephemeral: true });
+
+      const result = await registrationService.requestNicknameChange({
+        client: interaction.client,
         discordId: interaction.user.id,
         newNickname
       });
 
       if (!result.success) {
-        return interaction.reply({
-          embeds: [createErrorEmbed('Nickname Change Failed', result.error)],
-          ephemeral: true
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Nickname Change Failed', result.error)]
         });
       }
 
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           createSuccessEmbed(
-            'Nickname Changed',
-            `Your nickname has been updated to **${result.user.nickname}**!\n` +
-            `*Note: Nicknames can only be changed once every 7 days.*`
+            'Change Request Submitted',
+            `Your request to change your anonymous nickname to **${result.newNickname}** has been sent to the bot owner for approval.\n\n` +
+            `• **Current Nickname:** **${result.oldNickname}**\n` +
+            `• **Status:** Pending Owner Review\n\n` +
+            `You will receive a direct message once the bot owner has accepted or declined your request.`
           )
-        ],
-        ephemeral: true
+        ]
       });
     }
   }
