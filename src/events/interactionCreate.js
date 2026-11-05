@@ -5,7 +5,8 @@ const {
   TextInputBuilder,
   TextInputStyle,
   ActionRowBuilder,
-  EmbedBuilder
+  EmbedBuilder,
+  MessageFlags
 } = require('discord.js');
 const messageService = require('../services/messageService');
 const routingService = require('../services/routingService');
@@ -53,7 +54,7 @@ module.exports = {
           if (pendingData) {
             sendCommand.pendingDispatches.delete(pendingId);
 
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
             const result = await messageService.sendMessage({
               client: interaction.client,
@@ -119,7 +120,7 @@ module.exports = {
 
           await interaction.reply({
             embeds: [embed],
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
           });
           return;
         }
@@ -131,7 +132,7 @@ module.exports = {
           const targetGuildId = interaction.customId.replace('anon_modal_', '');
           const content = interaction.fields.getTextInputValue('anon_message_input');
 
-          await interaction.deferReply({ ephemeral: true });
+          await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
           const result = await messageService.sendMessage({
             client: interaction.client,
@@ -166,7 +167,7 @@ module.exports = {
           if (!isGlobalAdmin(interaction.user.id)) {
             return interaction.reply({
               embeds: [createErrorEmbed('Access Denied', 'Only the authorized bot owner can review requests.')],
-              ephemeral: true
+              flags: MessageFlags.Ephemeral
             });
           }
 
@@ -185,7 +186,7 @@ module.exports = {
           if (!result.success) {
             return interaction.reply({
               embeds: [createErrorEmbed('Decision Error', result.error)],
-              ephemeral: true
+              flags: MessageFlags.Ephemeral
             });
           }
 
@@ -214,7 +215,7 @@ module.exports = {
 
       const errorMessage = {
         embeds: [createErrorEmbed('Error', 'An unexpected error occurred while processing your request.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       };
 
       if (interaction.deferred || interaction.replied) {

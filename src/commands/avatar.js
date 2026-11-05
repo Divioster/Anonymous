@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const registrationService = require('../services/registrationService');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed } = require('../utils/helpers');
 
@@ -43,7 +43,7 @@ module.exports = {
     if (!user) {
       return interaction.reply({
         embeds: [createErrorEmbed('Not Registered', 'You must register first with `/register`.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -58,7 +58,7 @@ module.exports = {
 
       return interaction.reply({
         embeds: [embed],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -74,7 +74,7 @@ module.exports = {
       } else {
         return interaction.reply({
           embeds: [createErrorEmbed('Input Required', 'Please provide either an image URL or upload an image file.')],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -86,7 +86,7 @@ module.exports = {
       if (!result.success) {
         return interaction.reply({
           embeds: [createErrorEmbed('Failed to Set Avatar', result.error)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -97,7 +97,7 @@ module.exports = {
 
       return interaction.reply({
         embeds: [embed],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -110,13 +110,13 @@ module.exports = {
       if (!result.success) {
         return interaction.reply({
           embeds: [createErrorEmbed('Error', result.error)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
       return interaction.reply({
         embeds: [createSuccessEmbed('Avatar Removed', 'Your avatar has been reset to the default anonymous icon.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   }

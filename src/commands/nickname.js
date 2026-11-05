@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const registrationService = require('../services/registrationService');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed, formatDate } = require('../utils/helpers');
 
@@ -33,7 +33,7 @@ module.exports = {
       if (!user) {
         return interaction.reply({
           embeds: [createErrorEmbed('Not Registered', 'You are not registered yet. Use `/register` to create a nickname.')],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -51,14 +51,14 @@ module.exports = {
 
       return interaction.reply({
         embeds: [embed],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
     if (subcommand === 'change') {
       const newNickname = interaction.options.getString('new_nickname');
 
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       const result = await registrationService.requestNicknameChange({
         client: interaction.client,

@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const registrationService = require('../services/registrationService');
 const { createSuccessEmbed, createErrorEmbed } = require('../utils/helpers');
 
@@ -18,7 +18,7 @@ module.exports = {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'delete') {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       const result = await registrationService.requestAccountDeletion({
         client: interaction.client,

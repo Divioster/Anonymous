@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const moderationService = require('../../services/moderationService');
 const { isGlobalAdmin } = require('../../utils/permissions');
 const { createInfoEmbed, createErrorEmbed } = require('../../utils/helpers');
@@ -15,7 +15,7 @@ module.exports = {
     if (!isGlobalAdmin(interaction.user.id)) {
       return interaction.reply({
         embeds: [createErrorEmbed('Access Denied', 'Only authorized bot owners can view bot statistics.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -35,7 +35,7 @@ module.exports = {
 
     return interaction.reply({
       embeds: [embed],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 };

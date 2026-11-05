@@ -7,7 +7,8 @@ const {
   StringSelectMenuOptionBuilder,
   ModalBuilder,
   TextInputBuilder,
-  TextInputStyle
+  TextInputStyle,
+  MessageFlags
 } = require('discord.js');
 const routingService = require('../services/routingService');
 const registrationService = require('../services/registrationService');
@@ -93,14 +94,14 @@ module.exports = {
             'You must register an anonymous nickname before sending messages.\nUse `/register <nickname>` to get started.'
           )
         ],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
     if (user.is_banned) {
       return interaction.reply({
         embeds: [createErrorEmbed('Account Suspended', 'Your account has been banned from sending anonymous messages.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -108,7 +109,7 @@ module.exports = {
     if (availableServers.length === 0) {
       return interaction.reply({
         embeds: [createErrorEmbed('No Servers Available', 'There are currently no active servers configured for anonymous chat.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -140,13 +141,13 @@ module.exports = {
       if (!matched) {
         return interaction.reply({
           embeds: [createErrorEmbed('Server Not Found', `Server "${targetGuildId}" is not configured or bot is not in it. Use \`/servers\` to view available options.`)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
       // If message or attachments were provided, deliver immediately
       if (messageContent || rawAttachments.length > 0) {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const result = await messageService.sendMessage({
           client: interaction.client,
           discordUserId: interaction.user.id,
@@ -220,7 +221,7 @@ module.exports = {
     return interaction.reply({
       content: 'Select the destination server for your anonymous message:',
       components: [row],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 };

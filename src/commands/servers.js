@@ -4,7 +4,8 @@ const {
   SlashCommandBuilder,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder
+  StringSelectMenuOptionBuilder,
+  MessageFlags
 } = require('discord.js');
 const routingService = require('../services/routingService');
 const { createInfoEmbed, createErrorEmbed } = require('../utils/helpers');
@@ -25,7 +26,7 @@ module.exports = {
             'There are currently no Discord servers configured for anonymous messaging.'
           )
         ],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -58,7 +59,7 @@ module.exports = {
     return interaction.reply({
       embeds: [embed],
       components: [row],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 };

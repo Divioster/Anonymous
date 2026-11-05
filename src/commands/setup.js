@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder, ChannelType } = require('discord.js');
+const { SlashCommandBuilder, ChannelType, MessageFlags } = require('discord.js');
 const routingService = require('../services/routingService');
 const { isGlobalAdmin } = require('../utils/permissions');
 const { createSuccessEmbed, createErrorEmbed } = require('../utils/helpers');
@@ -29,7 +29,7 @@ module.exports = {
     if (!isGlobalAdmin(interaction.user.id)) {
       return interaction.reply({
         embeds: [createErrorEmbed('Access Denied', 'Only the authorized bot owner can configure AnonBot.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -42,7 +42,7 @@ module.exports = {
       if (!targetGuild) {
         return interaction.reply({
           embeds: [createErrorEmbed('Guild Not Found', `Bot is not in server ID \`${guildIdOption}\`.`)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
     }
@@ -50,7 +50,7 @@ module.exports = {
     if (!targetGuild) {
       return interaction.reply({
         embeds: [createErrorEmbed('Guild Required', 'Please run this command inside a server or provide a valid `guild_id`.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -58,11 +58,11 @@ module.exports = {
     if (!channel) {
       return interaction.reply({
         embeds: [createErrorEmbed('Channel Not Found', `Channel <#${channelOption.id}> was not found in ${targetGuild.name}.`)],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const result = await routingService.setupGuildChannel({
       guild: targetGuild,

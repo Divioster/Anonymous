@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const registrationService = require('../services/registrationService');
 const { createSuccessEmbed, createErrorEmbed } = require('../utils/helpers');
 
@@ -25,7 +25,7 @@ module.exports = {
     const nickname = interaction.options.getString('nickname');
     const avatarUrl = interaction.options.getString('avatar_url');
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const result = await registrationService.requestRegistration({
       client: interaction.client,

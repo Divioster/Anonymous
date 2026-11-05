@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const routingService = require('../services/routingService');
 const { isGlobalAdmin, checkBotChannelPermissions } = require('../utils/permissions');
 const { createInfoEmbed, createErrorEmbed, formatDate } = require('../utils/helpers');
@@ -21,7 +21,7 @@ module.exports = {
     if (!isGlobalAdmin(interaction.user.id)) {
       return interaction.reply({
         embeds: [createErrorEmbed('Access Denied', 'Only the authorized bot owner can view server settings.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -29,7 +29,7 @@ module.exports = {
     if (!guildId) {
       return interaction.reply({
         embeds: [createErrorEmbed('Guild Required', 'Please run this command inside a server or provide a `guild_id`.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -37,7 +37,7 @@ module.exports = {
     if (!config) {
       return interaction.reply({
         embeds: [createErrorEmbed('Not Configured', `Server \`${guildId}\` is not configured for anonymous messaging.`)],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -57,7 +57,7 @@ module.exports = {
 
     return interaction.reply({
       embeds: [embed],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 };

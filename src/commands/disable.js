@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const routingService = require('../services/routingService');
 const { isGlobalAdmin } = require('../utils/permissions');
 const { createSuccessEmbed, createErrorEmbed } = require('../utils/helpers');
@@ -21,7 +21,7 @@ module.exports = {
     if (!isGlobalAdmin(interaction.user.id)) {
       return interaction.reply({
         embeds: [createErrorEmbed('Access Denied', 'Only the authorized bot owner can disable server messaging.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -29,7 +29,7 @@ module.exports = {
     if (!guildId) {
       return interaction.reply({
         embeds: [createErrorEmbed('Guild Required', 'Please run this command in a server or provide a `guild_id`.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -37,13 +37,13 @@ module.exports = {
     if (!result.success) {
       return interaction.reply({
         embeds: [createErrorEmbed('Failed', result.error)],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
     return interaction.reply({
       embeds: [createSuccessEmbed('Server Disabled', `Anonymous messaging has been disabled for server ID \`${guildId}\`.`)],
-      ephemeral: true
+      flags: MessageFlags.Ephemeral
     });
   }
 };

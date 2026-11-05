@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const moderationService = require('../../services/moderationService');
 const { isGlobalAdmin } = require('../../utils/permissions');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed, formatDate } = require('../../utils/helpers');
@@ -37,7 +37,7 @@ module.exports = {
     if (!isGlobalAdmin(interaction.user.id)) {
       return interaction.reply({
         embeds: [createErrorEmbed('Access Denied', 'Only authorized bot owners can look up message senders.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -49,7 +49,7 @@ module.exports = {
       if (!result.success) {
         return interaction.reply({
           embeds: [createErrorEmbed('Lookup Failed', result.error)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -75,12 +75,12 @@ module.exports = {
 
       return interaction.reply({
         embeds: [embed],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
     if (subcommand === 'delete') {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
       const result = await moderationService.deleteMessage({
         client: interaction.client,

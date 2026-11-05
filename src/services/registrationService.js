@@ -550,8 +550,8 @@ const registrationService = {
     let cleanUrl = null;
     if (avatarUrl) {
       const validation = validateAvatarUrl(avatarUrl);
-      if (!avatarValidation.valid) {
-        return { success: false, error: avatarValidation.error };
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
       }
       cleanUrl = validation.url;
     }

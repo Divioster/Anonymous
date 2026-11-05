@@ -1,6 +1,6 @@
 'use strict';
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const moderationService = require('../../services/moderationService');
 const { isGlobalAdmin } = require('../../utils/permissions');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed, formatDate } = require('../../utils/helpers');
@@ -54,7 +54,7 @@ module.exports = {
     if (!isGlobalAdmin(interaction.user.id)) {
       return interaction.reply({
         embeds: [createErrorEmbed('Access Denied', 'Only the authorized bot owner can perform global user moderation.')],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -72,7 +72,7 @@ module.exports = {
       if (!result.success) {
         return interaction.reply({
           embeds: [createErrorEmbed('Ban Failed', result.error)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -84,7 +84,7 @@ module.exports = {
             `• **Reason:** ${reason}`
           )
         ],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -97,7 +97,7 @@ module.exports = {
       if (!result.success) {
         return interaction.reply({
           embeds: [createErrorEmbed('Unban Failed', result.error)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -108,7 +108,7 @@ module.exports = {
             `User **${result.user.nickname}** (\`${result.user.discord_id}\`) has been unbanned.`
           )
         ],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
 
@@ -117,7 +117,7 @@ module.exports = {
       if (!result.success) {
         return interaction.reply({
           embeds: [createErrorEmbed('User Not Found', result.error)],
-          ephemeral: true
+          flags: MessageFlags.Ephemeral
         });
       }
 
@@ -143,7 +143,7 @@ module.exports = {
 
       return interaction.reply({
         embeds: [embed],
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
     }
   }
