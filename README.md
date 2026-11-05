@@ -154,6 +154,9 @@ node scripts/deploy-commands.js YOUR_GUILD_ID
 ```bash
 # Start the bot
 npm start
+
+# Or pull latest changes from main and start
+npm run execute
 ```
 
 ---
