@@ -1,0 +1,19 @@
+[Unit]
+Description=AnonBot - Multi-Server Anonymous Chat Bot
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/anonbot
+EnvironmentFile=/opt/anonbot/.env
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=anonbot
+
+[Install]
+WantedBy=multi-user.target
+
