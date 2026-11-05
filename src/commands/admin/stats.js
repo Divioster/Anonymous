@@ -8,7 +8,8 @@ const { createInfoEmbed, createErrorEmbed } = require('../../utils/helpers');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('stats')
-    .setDescription('Display global AnonBot system statistics (Bot Owner only)'),
+    .setDescription('Display global AnonBot system statistics (Bot Owner only)')
+    .setDefaultMemberPermissions(0),
 
   async execute(interaction) {
     if (!isGlobalAdmin(interaction.user.id)) {

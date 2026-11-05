@@ -9,6 +9,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('message')
     .setDescription('Message lookup and moderation (Bot Owner only)')
+    .setDefaultMemberPermissions(0)
     .addSubcommand((subcommand) =>
       subcommand
         .setName('lookup')

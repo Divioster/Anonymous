@@ -19,7 +19,7 @@ module.exports = {
       } catch (err) {
         console.error('[Rate Limit Cleanup Error]', err.message);
       }
-    }, 60 * 60 * 1000);
+    }, 60 * 60 * 1000).unref();
   }
 };
 

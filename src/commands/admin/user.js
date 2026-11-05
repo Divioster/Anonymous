@@ -9,6 +9,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('user')
     .setDescription('Global user moderation commands (Bot Owner only)')
+    .setDefaultMemberPermissions(0)
     .addSubcommand((subcommand) =>
       subcommand
         .setName('ban')

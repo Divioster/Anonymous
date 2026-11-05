@@ -25,7 +25,7 @@ setInterval(() => {
       pendingDispatches.delete(id);
     }
   }
-}, 60 * 1000);
+}, 60 * 1000).unref();
 
 module.exports = {
   pendingDispatches,
@@ -207,7 +207,7 @@ module.exports = {
       new StringSelectMenuOptionBuilder()
         .setLabel(s.name.slice(0, 100))
         .setValue(s.id)
-        .setDescription(`Channel ID: ${s.channelId}`)
+        .setDescription('Participating anonymous chat server')
     );
 
     const selectMenu = new StringSelectMenuBuilder()

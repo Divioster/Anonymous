@@ -11,6 +11,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('channel-users')
     .setDescription('View registered users and their nicknames for a configured channel (Bot Owner only)')
+    .setDefaultMemberPermissions(0)
     .addStringOption((option) =>
       option
         .setName('guild_id')

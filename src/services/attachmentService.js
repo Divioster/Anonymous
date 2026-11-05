@@ -85,7 +85,8 @@ const attachmentService = {
 
     try {
       const response = await fetch(url, {
-        headers: { Range: 'bytes=0-15' }
+        headers: { Range: 'bytes=0-15' },
+        signal: AbortSignal.timeout(4000)
       });
       if (!response.ok) {
         return { valid: true }; // Could not range fetch, trust extension

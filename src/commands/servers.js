@@ -30,7 +30,7 @@ module.exports = {
     }
 
     const serverListText = servers
-      .map((s, idx) => `${idx + 1}. **${s.name}** (\`${s.id}\`)`)
+      .map((s, idx) => `${idx + 1}. **${s.name}**`)
       .join('\n');
 
     const embed = createInfoEmbed(
@@ -43,7 +43,7 @@ module.exports = {
       const option = new StringSelectMenuOptionBuilder()
         .setLabel(s.name.slice(0, 100))
         .setValue(s.id)
-        .setDescription(`Server ID: ${s.id}`);
+        .setDescription('Participating anonymous server');
 
       return option;
     });

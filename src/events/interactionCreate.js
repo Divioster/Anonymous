@@ -105,9 +105,8 @@ module.exports = {
 
           const embed = createInfoEmbed(
             `Server: ${guild ? guild.name : selectedGuildId}`,
-            `• **Server ID:** \`${selectedGuildId}\`\n` +
-            `• **Channel:** ${config ? `<#${config.channel_id}>` : 'Not configured'}\n` +
-            `• **Status:** ${config && config.enabled ? '🟢 Accepting anonymous messages' : '🔴 Disabled'}\n\n` +
+            `• **Server Name:** ${guild ? guild.name : 'Unknown'}\n` +
+            `• **Status:** ${config && config.enabled ? '🟢 Accepting anonymous messages' : '🔴 Currently not accepting messages'}\n\n` +
             `To send a message here, use \`/send\` and pick this server.`
           );
 

@@ -9,6 +9,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('setup')
     .setDescription('Configure destination channel for anonymous messaging (Bot Owner only)')
+    .setDefaultMemberPermissions(0)
     .addChannelOption((option) =>
       option
         .setName('channel')

@@ -9,6 +9,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('disable')
     .setDescription('Disable anonymous messaging for a server (Bot Owner only)')
+    .setDefaultMemberPermissions(0)
     .addStringOption((option) =>
       option
         .setName('guild_id')
