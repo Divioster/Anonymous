@@ -190,8 +190,12 @@ module.exports = {
           }
 
           // Update the owner's DM message to show decision and remove buttons
-          const originalEmbed = interaction.message.embeds[0];
-          const updatedEmbed = EmbedBuilder.from(originalEmbed)
+          const originalEmbed = interaction.message.embeds?.[0];
+          const updatedEmbed = originalEmbed
+            ? EmbedBuilder.from(originalEmbed)
+            : new EmbedBuilder().setTitle(`Request ${result.type || 'Review'}`);
+
+          updatedEmbed
             .setColor(isApprove ? 0x57F287 : 0xED4245)
             .addFields({
               name: '📌 Decision',
