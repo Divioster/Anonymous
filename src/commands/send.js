@@ -14,37 +14,73 @@ const registrationService = require('../services/registrationService');
 const messageService = require('../services/messageService');
 const { createSuccessEmbed, createErrorEmbed } = require('../utils/helpers');
 
+// Temporary in-memory cache for pending message dispatches (5 minute TTL)
+const pendingDispatches = new Map();
+
+// Periodic cleanup of expired pending dispatches
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, data] of pendingDispatches.entries()) {
+    if (data.expiresAt < now) {
+      pendingDispatches.delete(id);
+    }
+  }
+}, 60 * 1000);
+
 module.exports = {
+  pendingDispatches,
+
   data: new SlashCommandBuilder()
     .setName('send')
     .setDescription('Send an anonymous message to a participating server')
-    .addStringOption((option) =>
-      option
-        .setName('server')
-        .setDescription('Optional server ID (leave empty to pick from a list)')
-        .setRequired(false)
-    )
     .addStringOption((option) =>
       option
         .setName('message')
         .setDescription('Your message text (leave empty to open a modal editor)')
         .setRequired(false)
     )
-    .addAttachmentOption((option) =>
-      option.setName('attachment1').setDescription('First file attachment (PNG, JPG, WEBP, GIF, PDF, TXT)')
+    .addStringOption((option) =>
+      option
+        .setName('server')
+        .setDescription('Destination server (leave empty to choose or use current server)')
+        .setAutocomplete(true)
+        .setRequired(false)
     )
     .addAttachmentOption((option) =>
-      option.setName('attachment2').setDescription('Second file attachment')
+      option.setName('attachment1').setDescription('First file attachment (PNG, JPG, WEBP, GIF, PDF, TXT)').setRequired(false)
     )
     .addAttachmentOption((option) =>
-      option.setName('attachment3').setDescription('Third file attachment')
+      option.setName('attachment2').setDescription('Second file attachment').setRequired(false)
     )
     .addAttachmentOption((option) =>
-      option.setName('attachment4').setDescription('Fourth file attachment')
+      option.setName('attachment3').setDescription('Third file attachment').setRequired(false)
     )
     .addAttachmentOption((option) =>
-      option.setName('attachment5').setDescription('Fifth file attachment')
+      option.setName('attachment4').setDescription('Fourth file attachment').setRequired(false)
+    )
+    .addAttachmentOption((option) =>
+      option.setName('attachment5').setDescription('Fifth file attachment').setRequired(false)
     ),
+
+  async autocomplete(interaction) {
+    try {
+      const focusedValue = (interaction.options.getFocused() || '').toLowerCase();
+      const availableServers = routingService.getAvailableGuilds(interaction.client);
+
+      const filtered = availableServers.filter((s) =>
+        s.name.toLowerCase().includes(focusedValue) || s.id.includes(focusedValue)
+      );
+
+      await interaction.respond(
+        filtered.slice(0, 25).map((s) => ({
+          name: `${s.name.slice(0, 85)} (${s.id.slice(-4)})`,
+          value: s.id
+        }))
+      );
+    } catch (err) {
+      console.error('[Autocomplete Error in /send]', err);
+    }
+  },
 
   async execute(interaction) {
     // 1. Verify user is registered
@@ -86,8 +122,19 @@ module.exports = {
       if (att) rawAttachments.push(att);
     }
 
-    // If server is specified directly
-    let targetGuildId = serverOption;
+    // Determine target server:
+    // If specified explicitly -> use that.
+    // If not specified, but command is run in a configured participating guild -> default to current guild.
+    let targetGuildId = serverOption ? serverOption.trim() : null;
+
+    if (!targetGuildId && interaction.guildId) {
+      const currentConfig = routingService.getGuildConfig(interaction.guildId);
+      if (currentConfig && currentConfig.enabled) {
+        targetGuildId = interaction.guildId;
+      }
+    }
+
+    // Case A: Target server is determined (either via option or current guild)
     if (targetGuildId) {
       const matched = availableServers.find((s) => s.id === targetGuildId);
       if (!matched) {
@@ -97,7 +144,7 @@ module.exports = {
         });
       }
 
-      // If message or attachments were provided, dispatch right now
+      // If message or attachments were provided, deliver immediately
       if (messageContent || rawAttachments.length > 0) {
         await interaction.deferReply({ ephemeral: true });
         const result = await messageService.sendMessage({
@@ -126,7 +173,7 @@ module.exports = {
         });
       }
 
-      // No message provided, show modal for this server
+      // No message text or attachments provided -> show modal for this server
       const modal = new ModalBuilder()
         .setCustomId(`anon_modal_${targetGuildId}`)
         .setTitle(`Send to ${matched.name.slice(0, 30)}`);
@@ -143,7 +190,19 @@ module.exports = {
       return interaction.showModal(modal);
     }
 
-    // Server was not specified, show select menu
+    // Case B: Server not specified (e.g. running in DMs without server option)
+    // Save pending content/attachments if provided so they aren't lost when picking server
+    let customSelectId = 'anon_select_server';
+    if (messageContent || rawAttachments.length > 0) {
+      customSelectId = `anon_select_server_${interaction.id}`;
+      pendingDispatches.set(interaction.id, {
+        userId: interaction.user.id,
+        content: messageContent,
+        rawAttachments,
+        expiresAt: Date.now() + 5 * 60 * 1000
+      });
+    }
+
     const options = availableServers.slice(0, 25).map((s) =>
       new StringSelectMenuOptionBuilder()
         .setLabel(s.name.slice(0, 100))
@@ -152,7 +211,7 @@ module.exports = {
     );
 
     const selectMenu = new StringSelectMenuBuilder()
-      .setCustomId('anon_select_server')
+      .setCustomId(customSelectId)
       .setPlaceholder('Choose a server to send your message to...')
       .addOptions(options);
 
@@ -165,4 +224,3 @@ module.exports = {
     });
   }
 };
-
