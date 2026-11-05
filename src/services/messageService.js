@@ -90,12 +90,36 @@ const messageService = {
         });
       }
 
+      // Self-heal webhook if missing or not configured in database
+      if (!webhookClient) {
+        try {
+          const webhooks = await channel.fetchWebhooks().catch(() => null);
+          let wh = webhooks?.find((w) => w.token && w.owner?.id === client.user.id) || webhooks?.find((w) => w.token);
+
+          if (!wh) {
+            wh = await channel.createWebhook({
+              name: 'AnonBot Relay',
+              reason: 'Automatic self-healing for anonymous messaging'
+            }).catch(() => null);
+          }
+
+          if (wh && wh.token) {
+            guildRepo.updateWebhook(targetGuildId, wh.id, wh.token);
+            webhookClient = new WebhookClient({ id: wh.id, token: wh.token });
+            console.log(`[Message Delivery] Webhook self-healed on #${channel.name} (${wh.id})`);
+          }
+        } catch (whHealErr) {
+          console.warn(`[Message Delivery] Webhook self-healing failed: ${whHealErr.message}`);
+        }
+      }
+
       if (webhookClient) {
         try {
           const sent = await webhookClient.send({
             content: cleanContent || undefined,
             username: user.nickname,
             avatarURL: avatarUrl,
+            avatar_url: avatarUrl,
             files: discordFiles,
             allowedMentions: { parse: [] } // Disable all mentions (@everyone, @here, roles, users)
           });

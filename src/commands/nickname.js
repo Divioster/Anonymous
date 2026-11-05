@@ -16,12 +16,24 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('change')
-        .setDescription('Change your registered anonymous nickname (7-day cooldown)')
+        .setDescription('Request a nickname and/or avatar change (Requires Owner Approval)')
         .addStringOption((option) =>
           option
             .setName('new_nickname')
-            .setDescription('Your new anonymous nickname (3-24 characters)')
-            .setRequired(true)
+            .setDescription('New anonymous nickname (3-24 characters)')
+            .setRequired(false)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('avatar_url')
+            .setDescription('Optional direct image URL for your anonymous profile picture')
+            .setRequired(false)
+        )
+        .addAttachmentOption((option) =>
+          option
+            .setName('avatar_file')
+            .setDescription('Optional image file to upload as your anonymous profile picture')
+            .setRequired(false)
         )
     ),
 
@@ -57,31 +69,63 @@ module.exports = {
 
     if (subcommand === 'change') {
       const newNickname = interaction.options.getString('new_nickname');
+      const avatarUrlOption = interaction.options.getString('avatar_url');
+      const avatarFileOption = interaction.options.getAttachment('avatar_file');
+
+      if (!newNickname && !avatarUrlOption && !avatarFileOption) {
+        return interaction.reply({
+          embeds: [createErrorEmbed('Input Required', 'Please provide a new nickname, an avatar URL, or upload an avatar image.')],
+          flags: MessageFlags.Ephemeral
+        });
+      }
 
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      let resolvedAvatar = null;
+      if (avatarUrlOption || avatarFileOption) {
+        resolvedAvatar = await registrationService.resolvePermanentAvatarUrl(
+          interaction.client,
+          interaction.user.id,
+          avatarUrlOption,
+          avatarFileOption
+        );
+      }
 
       const result = await registrationService.requestNicknameChange({
         client: interaction.client,
         discordId: interaction.user.id,
-        newNickname
+        newNickname,
+        avatarUrl: resolvedAvatar
       });
 
       if (!result.success) {
         return interaction.editReply({
-          embeds: [createErrorEmbed('Nickname Change Failed', result.error)]
+          embeds: [createErrorEmbed('Change Request Failed', result.error)]
         });
       }
 
+      const details = [];
+      if (result.nicknameChanged) {
+        details.push(`• **Nickname Change:** **${result.oldNickname}** ➔ **${result.newNickname}**`);
+      }
+      if (result.avatarChanged) {
+        details.push(`• **Avatar Update:** [New Avatar Preview](${result.newAvatar})`);
+      }
+
+      const embed = createSuccessEmbed(
+        'Profile Update Request Submitted',
+        `Your request has been sent to the bot owner for approval.\n\n` +
+        details.join('\n') +
+        `\n\n• **Status:** Pending Owner Review\n` +
+        `You will receive a direct message once the bot owner has accepted or declined your request.`
+      );
+
+      if (result.avatarChanged && result.newAvatar) {
+        embed.setThumbnail(result.newAvatar);
+      }
+
       return interaction.editReply({
-        embeds: [
-          createSuccessEmbed(
-            'Change Request Submitted',
-            `Your request to change your anonymous nickname to **${result.newNickname}** has been sent to the bot owner for approval.\n\n` +
-            `• **Current Nickname:** **${result.oldNickname}**\n` +
-            `• **Status:** Pending Owner Review\n\n` +
-            `You will receive a direct message once the bot owner has accepted or declined your request.`
-          )
-        ]
+        embeds: [embed]
       });
     }
   }

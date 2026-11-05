@@ -66,57 +66,66 @@ module.exports = {
       const urlOption = interaction.options.getString('url');
       const fileOption = interaction.options.getAttachment('file');
 
-      let targetUrl = null;
-      if (fileOption) {
-        targetUrl = fileOption.url;
-      } else if (urlOption) {
-        targetUrl = urlOption;
-      } else {
+      if (!urlOption && !fileOption) {
         return interaction.reply({
           embeds: [createErrorEmbed('Input Required', 'Please provide either an image URL or upload an image file.')],
           flags: MessageFlags.Ephemeral
         });
       }
 
-      const result = registrationService.updateAvatar({
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      const result = await registrationService.requestAvatarChange({
+        client: interaction.client,
         discordId: interaction.user.id,
-        avatarUrl: targetUrl
+        avatarUrl: urlOption,
+        attachmentFile: fileOption,
+        isRemove: false
       });
 
       if (!result.success) {
-        return interaction.reply({
-          embeds: [createErrorEmbed('Failed to Set Avatar', result.error)],
-          flags: MessageFlags.Ephemeral
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Failed to Submit Request', result.error)]
         });
       }
 
       const embed = createSuccessEmbed(
-        'Avatar Updated',
-        `Your anonymous avatar for **${user.nickname}** has been updated successfully!`
-      ).setThumbnail(result.user.avatar_url);
+        'Avatar Update Request Submitted',
+        `Your request to update your anonymous avatar for **${user.nickname}** has been sent to the bot owner for approval.\n\n` +
+        `• **Preview:** [New Avatar Link](${result.newAvatar})\n` +
+        `• **Status:** Pending Owner Review\n\n` +
+        `You will receive a direct message once the bot owner has accepted or declined your request.`
+      ).setThumbnail(result.newAvatar);
 
-      return interaction.reply({
-        embeds: [embed],
-        flags: MessageFlags.Ephemeral
+      return interaction.editReply({
+        embeds: [embed]
       });
     }
 
     if (subcommand === 'remove') {
-      const result = registrationService.updateAvatar({
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      const result = await registrationService.requestAvatarChange({
+        client: interaction.client,
         discordId: interaction.user.id,
-        avatarUrl: null
+        isRemove: true
       });
 
       if (!result.success) {
-        return interaction.reply({
-          embeds: [createErrorEmbed('Error', result.error)],
-          flags: MessageFlags.Ephemeral
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Error', result.error)]
         });
       }
 
-      return interaction.reply({
-        embeds: [createSuccessEmbed('Avatar Removed', 'Your avatar has been reset to the default anonymous icon.')],
-        flags: MessageFlags.Ephemeral
+      return interaction.editReply({
+        embeds: [
+          createSuccessEmbed(
+            'Avatar Removal Request Submitted',
+            `Your request to reset your anonymous avatar for **${user.nickname}** to default has been sent to the bot owner for approval.\n\n` +
+            `• **Status:** Pending Owner Review\n\n` +
+            `You will receive a direct message once the bot owner has accepted or declined your request.`
+          )
+        ]
       });
     }
   }

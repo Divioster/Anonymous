@@ -19,19 +19,36 @@ module.exports = {
         .setName('avatar_url')
         .setDescription('Optional direct image URL for your anonymous profile picture (.png, .jpg, .webp, .gif)')
         .setRequired(false)
+    )
+    .addAttachmentOption((option) =>
+      option
+        .setName('avatar_file')
+        .setDescription('Optional image file to upload as your anonymous profile picture')
+        .setRequired(false)
     ),
 
   async execute(interaction) {
     const nickname = interaction.options.getString('nickname');
     const avatarUrl = interaction.options.getString('avatar_url');
+    const avatarFile = interaction.options.getAttachment('avatar_file');
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    let resolvedAvatar = null;
+    if (avatarUrl || avatarFile) {
+      resolvedAvatar = await registrationService.resolvePermanentAvatarUrl(
+        interaction.client,
+        interaction.user.id,
+        avatarUrl,
+        avatarFile
+      );
+    }
 
     const result = await registrationService.requestRegistration({
       client: interaction.client,
       discordId: interaction.user.id,
       nickname,
-      avatarUrl
+      avatarUrl: resolvedAvatar
     });
 
     if (!result.success) {
