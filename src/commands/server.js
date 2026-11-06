@@ -14,7 +14,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('update-roles')
-        .setDescription('Assign the "Anonymous" role to all registered users and remove it from unregistered ones')
+        .setDescription('Assign the "Anon" role to all registered users and remove it from unregistered ones')
         .addStringOption((option) =>
           option
             .setName('server')

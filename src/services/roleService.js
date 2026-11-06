@@ -3,18 +3,18 @@
 const { PermissionFlagsBits } = require('discord.js');
 const userRepo = require('../database/repositories/users');
 
-const ROLE_NAME = 'Anonymous';
+const ROLE_NAME = 'Anon';
 
 const roleService = {
   /**
-   * Ensures the "Anonymous" role exists in the given guild and bot has permission to manage it.
+   * Ensures the unmanaged "Anon" role exists in the given guild and bot has permission to manage it.
    */
-  async ensureAnonymousRole(guild) {
+  async ensureAnonRole(guild) {
     if (!guild) {
       return { success: false, error: 'Guild not found.' };
     }
 
-    const botMember = guild.members.me || await guild.members.fetch(guild.client.user.id).catch(() => null);
+    const botMember = guild.members.me || (await guild.members.fetch(guild.client.user.id).catch(() => null));
     if (!botMember || !botMember.permissions.has(PermissionFlagsBits.ManageRoles)) {
       return {
         success: false,
@@ -22,11 +22,12 @@ const roleService = {
       };
     }
 
-    let role = guild.roles.cache.find((r) => r.name.toLowerCase() === ROLE_NAME.toLowerCase());
+    // Always fetch unmanaged roles to avoid selecting the bot's own integration role
+    let role = guild.roles.cache.find((r) => r.name.toLowerCase() === ROLE_NAME.toLowerCase() && !r.managed);
     if (!role) {
       const fetchedRoles = await guild.roles.fetch().catch(() => null);
       if (fetchedRoles) {
-        role = fetchedRoles.find((r) => r.name.toLowerCase() === ROLE_NAME.toLowerCase());
+        role = fetchedRoles.find((r) => r.name.toLowerCase() === ROLE_NAME.toLowerCase() && !r.managed);
       }
     }
 
@@ -37,7 +38,7 @@ const roleService = {
           name: ROLE_NAME,
           color: 0x5865F2,
           mentionable: false,
-          reason: 'Anonymous chat role created by AnonBot for registered users'
+          reason: 'Anon chat role created by AnonBot for registered users'
         });
         created = true;
       } catch (err) {
@@ -58,13 +59,18 @@ const roleService = {
     return { success: true, role, created };
   },
 
+  // Alias for backward compatibility
+  async ensureAnonymousRole(guild) {
+    return this.ensureAnonRole(guild);
+  },
+
   /**
-   * Updates and synchronizes the "Anonymous" role for all members in a server.
+   * Updates and synchronizes the "Anon" role for members in a server without gateway chunking delays.
    * - Gives the role to all registered (and non-banned) users.
    * - Removes the role from users who are not registered or have been deleted/banned.
    */
   async updateServerRoles(guild) {
-    const roleResult = await this.ensureAnonymousRole(guild);
+    const roleResult = await this.ensureAnonRole(guild);
     if (!roleResult.success) {
       return roleResult;
     }
@@ -73,45 +79,46 @@ const roleService = {
     const allUsers = userRepo.getAllUsers();
     const registeredIds = new Set(allUsers.filter((u) => !u.is_banned).map((u) => u.discord_id));
 
-    // Attempt broad member fetch
-    try {
-      await guild.members.fetch().catch(() => null);
-    } catch {}
-
-    // Targeted fetch for registered members
-    const regIdArray = Array.from(registeredIds);
-    for (let i = 0; i < regIdArray.length; i += 100) {
-      const chunk = regIdArray.slice(i, i + 100);
-      try {
-        await guild.members.fetch({ user: chunk }).catch(() => null);
-      } catch {}
-    }
-
     let addedCount = 0;
     let removedCount = 0;
     const errors = [];
 
-    // 1. Add role to all registered members in this guild
-    for (const user of allUsers) {
-      if (user.is_banned) continue;
-      const member = guild.members.cache.get(user.discord_id);
-      if (member) {
-        if (!member.roles.cache.has(role.id)) {
+    // 1. Process all registered users via direct REST member fetches (10 concurrently)
+    const batchSize = 10;
+    for (let i = 0; i < allUsers.length; i += batchSize) {
+      const batch = allUsers.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(async (user) => {
           try {
-            await member.roles.add(role, 'User is registered in AnonBot');
-            addedCount++;
+            // Direct REST member fetch by single ID never hangs on gateway chunking
+            const member = await guild.members.fetch(user.discord_id).catch(() => null);
+            if (!member) return;
+
+            if (user.is_banned) {
+              if (member.roles.cache.has(role.id)) {
+                await member.roles.remove(role, 'User is banned from AnonBot').catch(() => null);
+                removedCount++;
+              }
+              return;
+            }
+
+            if (!member.roles.cache.has(role.id)) {
+              await member.roles.add(role, 'User is registered in AnonBot').catch(() => null);
+              addedCount++;
+            }
           } catch (err) {
-            errors.push(`Failed to add role to <@${user.discord_id}>: ${err.message}`);
+            errors.push(`Error updating <@${user.discord_id}>: ${err.message}`);
           }
-        }
-      }
+        })
+      );
     }
 
-    // 2. Remove role from members who are NOT registered or were deleted
-    for (const member of role.members.values()) {
+    // 2. Remove role from any cached member who currently has the role but is NOT registered
+    const membersWithRole = role.members || guild.members.cache.filter((m) => m.roles.cache.has(role.id));
+    for (const member of membersWithRole.values()) {
       if (!registeredIds.has(member.id)) {
         try {
-          await member.roles.remove(role, 'User is not registered or was deleted from AnonBot');
+          await member.roles.remove(role, 'User is not registered or was deleted from AnonBot').catch(() => null);
           removedCount++;
         } catch (err) {
           errors.push(`Failed to remove role from <@${member.id}>: ${err.message}`);
@@ -132,14 +139,14 @@ const roleService = {
   },
 
   /**
-   * Syncs a single user across all mutual guilds where AnonBot is present and the "Anonymous" role exists.
+   * Syncs a single user across all mutual guilds where AnonBot is present and the "Anon" role exists.
    */
   async syncUserAcrossGuilds(client, discordId, isRegistered) {
     if (!client || !discordId) return;
 
     for (const guild of client.guilds.cache.values()) {
       try {
-        const role = guild.roles.cache.find((r) => r.name.toLowerCase() === ROLE_NAME.toLowerCase());
+        const role = guild.roles.cache.find((r) => r.name.toLowerCase() === ROLE_NAME.toLowerCase() && !r.managed);
         if (!role) continue;
 
         const botMember = guild.members.me;
@@ -166,4 +173,3 @@ const roleService = {
 };
 
 module.exports = roleService;
-
