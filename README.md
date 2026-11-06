@@ -250,6 +250,7 @@ Add the following line (runs every day at 3:00 AM):
 | `/settings [guild_id]` | Inspect current channel configuration, webhook status, and permissions |
 | `/disable [guild_id]` | Disable anonymous messaging for a server |
 | `/channel-users [guild_id]` | View all registered users and nicknames who have posted in a channel |
+| `/server-users [server]` | View all registered members in a server with their nicknames (active & inactive) |
 | `/user ban <target> [reason]` | Globally ban a user by Discord ID, nickname, or internal ID |
 | `/user unban <target>` | Unban a user |
 | `/user info <target>` | View confidential user profile, Discord ID, registration info, and history |
