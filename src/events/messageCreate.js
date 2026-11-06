@@ -105,3 +105,4 @@ module.exports = {
     return message.reply({ embeds: [helpEmbed] }).catch(() => null);
   }
 };
+
