@@ -13,6 +13,7 @@ const moderationRepo = require('../database/repositories/moderation');
 const constants = require('../config/constants');
 const config = require('../config/config');
 const attachmentService = require('./attachmentService');
+const roleService = require('./roleService');
 const { validateNickname, validateAvatarUrl } = require('../utils/validation');
 const { generateUuid, formatDate } = require('../utils/helpers');
 
@@ -598,6 +599,9 @@ const registrationService = {
 
         requestRepo.updateStatus(request.id, 'APPROVED', reviewerId);
 
+        // Sync "Anonymous" role for new user across mutual guilds
+        roleService.syncUserAcrossGuilds(client, request.discord_id, true).catch(() => null);
+
         moderationRepo.logAudit({
           actorId: reviewerId,
           action: 'REGISTRATION_APPROVED',
@@ -741,6 +745,9 @@ const registrationService = {
         }
 
         requestRepo.updateStatus(request.id, 'APPROVED', reviewerId);
+
+        // Remove "Anonymous" role for deleted user across mutual guilds
+        roleService.syncUserAcrossGuilds(client, request.discord_id, false).catch(() => null);
 
         moderationRepo.logAudit({
           actorId: reviewerId,

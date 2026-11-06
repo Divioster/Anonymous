@@ -2,6 +2,7 @@
 
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const moderationService = require('../../services/moderationService');
+const roleService = require('../../services/roleService');
 const { isGlobalAdmin } = require('../../utils/permissions');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed, formatDate } = require('../../utils/helpers');
 
@@ -76,6 +77,8 @@ module.exports = {
         });
       }
 
+      roleService.syncUserAcrossGuilds(interaction.client, result.user.discord_id, false).catch(() => null);
+
       return interaction.reply({
         embeds: [
           createSuccessEmbed(
@@ -100,6 +103,8 @@ module.exports = {
           flags: MessageFlags.Ephemeral
         });
       }
+
+      roleService.syncUserAcrossGuilds(interaction.client, result.user.discord_id, true).catch(() => null);
 
       return interaction.reply({
         embeds: [
