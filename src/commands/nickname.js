@@ -2,6 +2,8 @@
 
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const registrationService = require('../services/registrationService');
+const attachmentService = require('../services/attachmentService');
+const { validateAvatarUrl } = require('../utils/validation');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed, formatDate } = require('../utils/helpers');
 
 module.exports = {
@@ -23,16 +25,16 @@ module.exports = {
             .setDescription('New anonymous nickname (3-24 characters)')
             .setRequired(false)
         )
-        .addStringOption((option) =>
-          option
-            .setName('avatar_url')
-            .setDescription('Optional direct image URL for your anonymous profile picture')
-            .setRequired(false)
-        )
         .addAttachmentOption((option) =>
           option
             .setName('avatar_file')
-            .setDescription('Optional image file to upload as your anonymous profile picture')
+            .setDescription('Optional new JPG or PNG image file for your avatar')
+            .setRequired(false)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('avatar_url')
+            .setDescription('Optional direct image URL (.jpg, .jpeg, or .png)')
             .setRequired(false)
         )
     ),
@@ -69,17 +71,37 @@ module.exports = {
 
     if (subcommand === 'change') {
       const newNickname = interaction.options.getString('new_nickname');
-      const avatarUrlOption = interaction.options.getString('avatar_url');
       const avatarFileOption = interaction.options.getAttachment('avatar_file');
+      const avatarUrlOption = interaction.options.getString('avatar_url');
 
       if (!newNickname && !avatarUrlOption && !avatarFileOption) {
         return interaction.reply({
-          embeds: [createErrorEmbed('Input Required', 'Please provide a new nickname, an avatar URL, or upload an avatar image.')],
+          embeds: [createErrorEmbed('Input Required', 'Please provide a new nickname, a JPG/PNG avatar file, or an avatar URL.')],
           flags: MessageFlags.Ephemeral
         });
       }
 
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      // Validate avatar file if provided (strictly JPG or PNG)
+      if (avatarFileOption) {
+        const fileValidation = await attachmentService.validateAvatarFile(avatarFileOption);
+        if (!fileValidation.valid) {
+          return interaction.editReply({
+            embeds: [createErrorEmbed('Invalid Avatar File', fileValidation.error)]
+          });
+        }
+      }
+
+      // Validate avatar URL if provided (strictly JPG or PNG)
+      if (avatarUrlOption && !avatarFileOption) {
+        const urlValidation = validateAvatarUrl(avatarUrlOption);
+        if (!urlValidation.valid) {
+          return interaction.editReply({
+            embeds: [createErrorEmbed('Invalid Avatar URL', urlValidation.error)]
+          });
+        }
+      }
 
       let resolvedAvatar = null;
       if (avatarUrlOption || avatarFileOption) {

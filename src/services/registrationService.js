@@ -12,6 +12,7 @@ const requestRepo = require('../database/repositories/requests');
 const moderationRepo = require('../database/repositories/moderation');
 const constants = require('../config/constants');
 const config = require('../config/config');
+const attachmentService = require('./attachmentService');
 const { validateNickname, validateAvatarUrl } = require('../utils/validation');
 const { generateUuid, formatDate } = require('../utils/helpers');
 
@@ -58,12 +59,17 @@ const registrationService = {
     if (fileOption) {
       try {
         let storageMsg = null;
+        const ext = fileOption.name?.split('.').pop()?.toLowerCase() || (fileOption.contentType?.includes('jpeg') ? 'jpg' : 'png');
+        const cleanExt = (ext === 'jpeg' || ext === 'jpg') ? 'jpg' : 'png';
+        const filename = `avatar_${discordId}_${Date.now()}.${cleanExt}`;
+        const discordFile = new AttachmentBuilder(fileOption.url, { name: filename });
+
         try {
           const user = await client.users.fetch(discordId).catch(() => null);
           if (user) {
             storageMsg = await user.send({
               content: '🎨 Anonymous avatar stored for your profile:',
-              files: [fileOption.url]
+              files: [discordFile]
             }).catch(() => null);
           }
         } catch {}
@@ -73,7 +79,7 @@ const registrationService = {
           if (adminUser) {
             storageMsg = await adminUser.send({
               content: `🎨 Anonymous avatar storage for <@${discordId}>:`,
-              files: [fileOption.url]
+              files: [discordFile]
             }).catch(() => null);
           }
         }
@@ -404,6 +410,13 @@ const registrationService = {
 
     let cleanAvatar = null;
     if (!isRemove) {
+      if (attachmentFile) {
+        const fileValidation = await attachmentService.validateAvatarFile(attachmentFile);
+        if (!fileValidation.valid) {
+          return { success: false, error: fileValidation.error };
+        }
+      }
+
       const resolved = await this.resolvePermanentAvatarUrl(client, discordId, avatarUrl, attachmentFile);
       if (!resolved) {
         return { success: false, error: 'Could not resolve avatar image.' };
@@ -808,6 +821,13 @@ const registrationService = {
 
     let cleanUrl = null;
     if (attachmentFile || avatarUrl) {
+      if (attachmentFile) {
+        const fileValidation = await attachmentService.validateAvatarFile(attachmentFile);
+        if (!fileValidation.valid) {
+          return { success: false, error: fileValidation.error };
+        }
+      }
+
       const resolved = await this.resolvePermanentAvatarUrl(client, discordId, avatarUrl, attachmentFile);
       if (!resolved) {
         return { success: false, error: 'Could not resolve avatar image.' };

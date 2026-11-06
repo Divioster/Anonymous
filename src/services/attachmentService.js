@@ -134,6 +134,59 @@ const attachmentService = {
   },
 
   /**
+   * Validates a single avatar attachment to ensure it is strictly JPG or PNG.
+   * @param {Object} attachment - Discord attachment object
+   * @returns {Promise<{valid: boolean, error?: string, extension?: string}>}
+   */
+  async validateAvatarFile(attachment) {
+    if (!attachment || !attachment.url) {
+      return { valid: false, error: 'No avatar file was provided.' };
+    }
+
+    // 1. Max size check (8 MB)
+    if (attachment.size && attachment.size > constants.ATTACHMENTS.MAX_SIZE_BYTES) {
+      return { valid: false, error: 'Avatar file exceeds the maximum allowed size of 8 MB.' };
+    }
+
+    // 2. Check file extension (JPG or PNG only)
+    const ext = path.extname(attachment.name || '').replace('.', '').toLowerCase();
+    const allowed = ['jpg', 'jpeg', 'png'];
+    if (!allowed.includes(ext)) {
+      return {
+        valid: false,
+        error: `Only JPG and PNG images are supported for profile pictures. (Received: .${ext || 'unknown'})`
+      };
+    }
+
+    // 3. Check MIME content type if provided
+    if (attachment.contentType) {
+      const mime = attachment.contentType.toLowerCase().split(';')[0].trim();
+      const allowedMimes = ['image/jpeg', 'image/png'];
+      if (!allowedMimes.includes(mime)) {
+        return {
+          valid: false,
+          error: `Only JPG and PNG images are supported. (Received MIME type: ${attachment.contentType})`
+        };
+      }
+    }
+
+    // 4. Verify magic bytes / file signature
+    try {
+      const signatureCheck = await this.verifyMagicBytes(attachment.url, ext);
+      if (!signatureCheck.valid) {
+        return {
+          valid: false,
+          error: `Image file failed signature verification: ${signatureCheck.error}`
+        };
+      }
+    } catch (err) {
+      console.warn(`[Avatar Magic Bytes Check] Warning: ${err.message}`);
+    }
+
+    return { valid: true, extension: ext };
+  },
+
+  /**
    * Prepares AttachmentBuilder array for sending via webhook or channel.
    */
   createDiscordFiles(validatedAttachments) {

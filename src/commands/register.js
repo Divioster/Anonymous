@@ -2,6 +2,8 @@
 
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const registrationService = require('../services/registrationService');
+const attachmentService = require('../services/attachmentService');
+const { validateAvatarUrl } = require('../utils/validation');
 const { createSuccessEmbed, createErrorEmbed } = require('../utils/helpers');
 
 module.exports = {
@@ -14,28 +16,48 @@ module.exports = {
         .setDescription('Your unique anonymous nickname (3-24 alphanumeric characters, hyphens, underscores)')
         .setRequired(true)
     )
-    .addStringOption((option) =>
-      option
-        .setName('avatar_url')
-        .setDescription('Optional direct image URL for your anonymous profile picture (.png, .jpg, .webp, .gif)')
-        .setRequired(false)
-    )
     .addAttachmentOption((option) =>
       option
         .setName('avatar_file')
-        .setDescription('Optional image file to upload as your anonymous profile picture')
+        .setDescription('Optional JPG or PNG image file to upload as your profile picture')
+        .setRequired(false)
+    )
+    .addStringOption((option) =>
+      option
+        .setName('avatar_url')
+        .setDescription('Optional direct image URL (.jpg, .jpeg, or .png)')
         .setRequired(false)
     ),
 
   async execute(interaction) {
     const nickname = interaction.options.getString('nickname');
-    const avatarUrl = interaction.options.getString('avatar_url');
     const avatarFile = interaction.options.getAttachment('avatar_file');
+    const avatarUrl = interaction.options.getString('avatar_url');
 
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    // Validate avatar file if provided (strictly JPG or PNG)
+    if (avatarFile) {
+      const fileValidation = await attachmentService.validateAvatarFile(avatarFile);
+      if (!fileValidation.valid) {
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Invalid Avatar File', fileValidation.error)]
+        });
+      }
+    }
+
+    // Validate avatar URL if provided (strictly JPG or PNG)
+    if (avatarUrl && !avatarFile) {
+      const urlValidation = validateAvatarUrl(avatarUrl);
+      if (!urlValidation.valid) {
+        return interaction.editReply({
+          embeds: [createErrorEmbed('Invalid Avatar URL', urlValidation.error)]
+        });
+      }
+    }
+
     let resolvedAvatar = null;
-    if (avatarUrl || avatarFile) {
+    if (avatarFile || avatarUrl) {
       resolvedAvatar = await registrationService.resolvePermanentAvatarUrl(
         interaction.client,
         interaction.user.id,
@@ -61,7 +83,7 @@ module.exports = {
       'Registration Request Submitted',
       `Your request to register the anonymous nickname **${result.nickname}** has been sent to the bot owner for approval.\n\n` +
       `• **Status:** Pending Owner Review\n` +
-      `• **Profile Picture:** ${result.avatarUrl ? `[Custom Avatar](${result.avatarUrl})` : 'Default'}\n\n` +
+      `• **Profile Picture:** ${result.avatarUrl ? `[Custom Avatar (${avatarFile ? 'File' : 'URL'})](${result.avatarUrl})` : 'Default'}\n\n` +
       `You will receive a direct message once the bot owner has accepted or declined your request.`
     );
 

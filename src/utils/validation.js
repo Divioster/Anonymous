@@ -39,7 +39,7 @@ function validateNickname(rawNickname) {
 }
 
 /**
- * Validates an image URL for avatar.
+ * Validates an image URL for avatar (JPG or PNG only).
  */
 function validateAvatarUrl(url) {
   if (!url || typeof url !== 'string') {
@@ -53,13 +53,16 @@ function validateAvatarUrl(url) {
       return { valid: false, error: 'Avatar URL must use HTTP or HTTPS protocol.' };
     }
 
-    // Check if path or hostname looks like an image or standard CDN
     const pathname = parsed.pathname.toLowerCase();
-    const hasImageExt = /\.(png|jpe?g|webp|gif)$/i.test(pathname);
-    const isDiscordCdn = parsed.hostname.endsWith('discordapp.com') || parsed.hostname.endsWith('discordapp.net');
+    const hasJpgOrPngExt = /\.(jpe?g|png)$/i.test(pathname);
+    const formatParam = parsed.searchParams.get('format')?.toLowerCase();
+    const hasJpgOrPngParam = formatParam === 'png' || formatParam === 'jpg' || formatParam === 'jpeg';
 
-    if (!hasImageExt && !isDiscordCdn) {
-      return { valid: false, error: 'Avatar URL must point to a direct image file (.png, .jpg, .jpeg, .webp, .gif).' };
+    if (!hasJpgOrPngExt && !hasJpgOrPngParam) {
+      return {
+        valid: false,
+        error: 'Avatar image must be a JPG or PNG file (.jpg, .jpeg, or .png).'
+      };
     }
 
     return { valid: true, url: trimmed };

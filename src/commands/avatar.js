@@ -2,6 +2,8 @@
 
 const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const registrationService = require('../services/registrationService');
+const attachmentService = require('../services/attachmentService');
+const { validateAvatarUrl } = require('../utils/validation');
 const { createSuccessEmbed, createErrorEmbed, createInfoEmbed } = require('../utils/helpers');
 
 module.exports = {
@@ -17,16 +19,16 @@ module.exports = {
       subcommand
         .setName('set')
         .setDescription('Set a custom profile picture for your anonymous messages')
-        .addStringOption((option) =>
-          option
-            .setName('url')
-            .setDescription('Direct image URL (.png, .jpg, .webp, .gif)')
-            .setRequired(false)
-        )
         .addAttachmentOption((option) =>
           option
             .setName('file')
-            .setDescription('Upload an image file to use as your avatar')
+            .setDescription('Upload a JPG or PNG image file to use as your avatar')
+            .setRequired(false)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('url')
+            .setDescription('Direct image URL (.jpg, .jpeg, or .png)')
             .setRequired(false)
         )
     )
@@ -63,17 +65,37 @@ module.exports = {
     }
 
     if (subcommand === 'set') {
-      const urlOption = interaction.options.getString('url');
       const fileOption = interaction.options.getAttachment('file');
+      const urlOption = interaction.options.getString('url');
 
-      if (!urlOption && !fileOption) {
+      if (!fileOption && !urlOption) {
         return interaction.reply({
-          embeds: [createErrorEmbed('Input Required', 'Please provide either an image URL or upload an image file.')],
+          embeds: [createErrorEmbed('Input Required', 'Please provide either a JPG/PNG image file or a direct image URL.')],
           flags: MessageFlags.Ephemeral
         });
       }
 
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      // Validate attachment format (must be JPG or PNG)
+      if (fileOption) {
+        const fileValidation = await attachmentService.validateAvatarFile(fileOption);
+        if (!fileValidation.valid) {
+          return interaction.editReply({
+            embeds: [createErrorEmbed('Invalid Image File', fileValidation.error)]
+          });
+        }
+      }
+
+      // Validate URL format (must be JPG or PNG)
+      if (urlOption && !fileOption) {
+        const urlValidation = validateAvatarUrl(urlOption);
+        if (!urlValidation.valid) {
+          return interaction.editReply({
+            embeds: [createErrorEmbed('Invalid Image URL', urlValidation.error)]
+          });
+        }
+      }
 
       const result = await registrationService.requestAvatarChange({
         client: interaction.client,
@@ -93,6 +115,7 @@ module.exports = {
         'Avatar Update Request Submitted',
         `Your request to update your anonymous avatar for **${user.nickname}** has been sent to the bot owner for approval.\n\n` +
         `• **Preview:** [New Avatar Link](${result.newAvatar})\n` +
+        `• **Format:** JPG / PNG\n` +
         `• **Status:** Pending Owner Review\n\n` +
         `You will receive a direct message once the bot owner has accepted or declined your request.`
       ).setThumbnail(result.newAvatar);
